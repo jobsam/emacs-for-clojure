@@ -1,63 +1,63 @@
-;; See:  https://clojure-lsp.io/
-;; also: https://emacs-lsp.github.io/lsp-mode/
-(setup (:package lsp-mode lsp-ui lsp-ivy lsp-treemacs)
-  (:hook lsp-enable-which-key-integration)
-  (:bind "M-<f7>" lsp-find-references))
+;; Setup package archives and initialize package system
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
 
-;; clojure-mode is (naturally) the major mode for editing
-;; Clojure and ClojureScript. subword-mode allows words
-;; in camel case to be treated as separate words for
-;; movement and editing commands.
-;; https://github.com/clojure-emacs/clojure-mode
-;; subword-mode is useful for working with camel-case tokens,
-;; like names of Java classes (e.g. JavaClassName)
-(setup (:package clojure-mode)
-  (:hook subword-mode
-         paredit-mode
-         lsp))
+;; Install required packages if not already installed
+(defvar my-required-packages
+  '(lsp-mode lsp-ui lsp-ivy lsp-treemacs
+    clojure-mode cider company cider-hydra clj-refactor))
 
-;; CIDER is a whole interactive development environment for
-;; Clojure. There is a ton of functionality here, so be sure
-;; to check out the excellent documentation at
-;; https://docs.cider.mx/cider/index.html
-(setup (:package cider)
-  (:bind "C-c u" cider-user-ns
-         "C-M-r" cider-refresh)
-  (:option cider-show-error-buffer t
-           cider-auto-select-error-buffer t
-           cider-repl-history-file "~/.emacs.d/cider-history"
-           cider-repl-pop-to-buffer-on-connect t
-           cider-repl-wrap-history t))
+(dolist (pkg my-required-packages)
+  (unless (package-installed-p pkg)
+    (package-install pkg)))
 
-;; company provides auto-completion for CIDER
-;; see https://docs.cider.mx/cider/usage/code_completion.html
-(setup (:package company)
-  (:hook-into cider-mode
-	      cider-repl-mode))
+;; Configure lsp-mode for Clojure development
+(require 'lsp-mode)
+(require 'lsp-ui)
+(require 'lsp-ivy)
+(require 'lsp-treemacs)
+(add-hook 'clojure-mode-hook #'lsp)
 
-;; hydra provides a nice looking menu for commands
-;; to see what's available, use M-x and the prefix cider-hydra
-;; https://github.com/clojure-emacs/cider-hydra
-(setup (:package cider-hydra)
-  (:hook-into clojure-mode))
+;; Configure clojure-mode and related settings
+(require 'clojure-mode)
+(add-hook 'clojure-mode-hook #'subword-mode)
+(add-hook 'clojure-mode-hook #'paredit-mode)
+(add-hook 'clojure-mode-hook #'lsp)
 
-;; additional refactorings for CIDER
-;; e.g. add missing libspec, extract function, destructure keys
-;; https://github.com/clojure-emacs/clj-refactor.el
-(setup (:package clj-refactor)
-  (cljr-add-keybindings-with-prefix "C-c C-m")
-  (:hook-into clojure-mode))
+;; Configure CIDER and related key bindings
+(require 'cider)
+(global-set-key (kbd "C-c u") #'cider-user-ns)
+(global-set-key (kbd "C-M-r") #'cider-refresh)
+(setq cider-show-error-buffer t
+      cider-auto-select-error-buffer t
+      cider-repl-history-file "~/.emacs.d/cider-history"
+      cider-repl-pop-to-buffer-on-connect t
+      cider-repl-wrap-history t)
 
-;; enable paredit in your REPL
-(setup cider-repl-mode
-  (:hook paredit-mode))
+;; Configure company for auto-completion with CIDER
+(require 'company)
+(add-hook 'cider-mode-hook #'company-mode)
+(add-hook 'cider-repl-mode-hook #'company-mode)
 
-;; Use clojure mode for other extensions
-(add-to-list 'auto-mode-alist '("\\.boot$" . clojure-mode))
-(add-to-list 'auto-mode-alist '("\\.cljs.*$" . clojure-mode))
+;; Configure cider-hydra for Clojure development
+(require 'cider-hydra)
+(add-hook 'clojure-mode-hook #'cider-hydra-mode)
+
+;; Configure clj-refactor for additional refactorings
+(require 'clj-refactor)
+(add-hook 'clojure-mode-hook #'clj-refactor-mode)
+(cljr-add-keybindings-with-prefix "C-c C-m")
+
+;; Enable paredit in CIDER REPL
+(add-hook 'cider-repl-mode-hook #'paredit-mode)
+
+;; Use clojure mode for specific file extensions
+(add-to-list 'auto-mode-alist '("\\.boot\\'" . clojure-mode))
+(add-to-list 'auto-mode-alist '("\\.cljs.*\\'" . clojure-mode))
 (add-to-list 'auto-mode-alist '("lein-env" . enh-ruby-mode))
 
-;; these help me out with the way I usually develop web apps
+;; Custom functions for starting HTTP server and managing namespaces
 (defun cider-start-http-server ()
   (interactive)
   (cider-load-buffer)
@@ -73,4 +73,3 @@
 (defun cider-user-ns ()
   (interactive)
   (cider-repl-set-ns "user"))
-
